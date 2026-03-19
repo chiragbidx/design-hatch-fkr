@@ -6,12 +6,27 @@ import { products, teams, teamMembers } from "@/lib/db/schema";
 import { getAuthSession } from "@/lib/auth/session";
 import { eq, and, desc } from "drizzle-orm";
 
+// Match server Product type with data returned to client.
+export type Product = {
+  id: string;
+  name: string;
+  description?: string;
+  price: string;
+  imageUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 // Zod validation schema for create
 const createProductSchema = z.object({
   name: z.string().min(1, "Name required"),
   description: z.string().max(512, "Description too long").optional(),
   price: z.coerce.number().min(0, "Price required"),
-  imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  imageUrl: z
+    .string()
+    .url("Must be a valid URL")
+    .optional()
+    .or(z.literal("")),
 });
 
 // Helper: get current user's teamId for multi-tenancy
@@ -32,7 +47,7 @@ async function getCurrentTeamId() {
 }
 
 // Fetch all products for current team (latest first)
-export async function getProducts() {
+export async function getProducts(): Promise<Product[]> {
   const session = await getAuthSession();
   if (!session) throw new Error("Not authenticated");
   // Get user's team(s)
@@ -44,11 +59,16 @@ export async function getProducts() {
     columns: ["teamId"],
   });
   if (!member) return [];
-  return await db
+  const rows = await db
     .select()
     .from(products)
     .where(eq(products.teamId, member.teamId))
     .orderBy(desc(products.createdAt));
+  // Cast to Product (ensure .price is always string for client)
+  return rows.map((p) => ({
+    ...p,
+    price: typeof p.price === "number" ? p.price.toString() : p.price,
+  }));
 }
 
 // Add a new product for current team
@@ -71,7 +91,12 @@ export async function addProduct(formData: FormData) {
         ...parsed.data,
       })
       .returning();
-    return { status: "success", message: "Product added", product: result };
+    // Patch output to keep .price as string everywhere
+    const out: Product = {
+      ...result,
+      price: typeof result.price === "number" ? result.price.toString() : result.price,
+    };
+    return { status: "success", message: "Product added", product: out };
   } catch (err: any) {
     return { status: "error", message: err.message || "Error adding product" };
   }
