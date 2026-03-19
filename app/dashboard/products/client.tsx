@@ -11,28 +11,16 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { FormField, Form, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { addProduct } from "./actions";
+import { addProduct, Product as ProductType } from "./actions";
 
-// Expected product type (align with schema)
-type Product = {
-  id: string;
-  name: string;
-  description?: string;
-  price: string;
-  imageUrl?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-export default function ProductsClient({ products }: { products: Product[] }) {
-  // For loading and optimistic UI
+export default function ProductsClient({ products }: { products: ProductType[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [newProducts, setNewProducts] = useState<Product[]>(products);
+  const [newProducts, setNewProducts] = useState<ProductType[]>(products);
 
   const handleAdd = async (formData: FormData) => {
     setFormError(null);
