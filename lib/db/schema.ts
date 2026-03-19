@@ -1,7 +1,9 @@
 import "server-only";
 
-import { pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, numeric, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+
+// ...existing users, teams, teamMembers, etc...
 
 export const users = pgTable("users", {
   id: text("id")
@@ -106,6 +108,27 @@ export const featureItems = pgTable("feature_items", {
   title: text("title").notNull(),
   description: text("description").notNull().default(""),
   status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// --- Products Table ---
+export const products = pgTable("products", {
+  id: text("id")
+    .notNull()
+    .default(sql`gen_random_uuid()`)
+    .primaryKey(),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  price: numeric("price").notNull().default("0"),
+  imageUrl: text("image_url"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
