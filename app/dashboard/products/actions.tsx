@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db/client";
-import { products, teams, teamMembers } from "@/lib/db/schema";
+import { products, teamMembers } from "@/lib/db/schema";
 import { getAuthSession } from "@/lib/auth/session";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -35,13 +35,17 @@ async function getCurrentTeamId() {
   if (!session) {
     throw new Error("Not authenticated");
   }
-  const member = await db.query.teamMembers.findFirst({
-    where: and(
-      eq(teamMembers.userId, session.userId),
-      eq(teamMembers.role, "owner")
-    ),
-    columns: ["teamId"],
-  });
+  const rows = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(
+      and(
+        eq(teamMembers.userId, session.userId),
+        eq(teamMembers.role, "owner")
+      )
+    )
+    .limit(1);
+  const member = rows[0];
   if (!member) throw new Error("No primary team found");
   return member.teamId;
 }
@@ -50,22 +54,25 @@ async function getCurrentTeamId() {
 export async function getProducts(): Promise<Product[]> {
   const session = await getAuthSession();
   if (!session) throw new Error("Not authenticated");
-  // Get user's team(s)
-  const member = await db.query.teamMembers.findFirst({
-    where: and(
-      eq(teamMembers.userId, session.userId),
-      eq(teamMembers.role, "owner")
-    ),
-    columns: ["teamId"],
-  });
-  if (!member) return [];
   const rows = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(
+      and(
+        eq(teamMembers.userId, session.userId),
+        eq(teamMembers.role, "owner")
+      )
+    )
+    .limit(1);
+  const member = rows[0];
+  if (!member) return [];
+  const prodRows = await db
     .select()
     .from(products)
     .where(eq(products.teamId, member.teamId))
     .orderBy(desc(products.createdAt));
   // Cast to Product (ensure .price is always string for client)
-  return rows.map((p) => ({
+  return prodRows.map((p) => ({
     ...p,
     price: typeof p.price === "number" ? p.price.toString() : p.price,
   }));
