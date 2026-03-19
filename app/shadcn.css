@@ -24,6 +24,16 @@
   }
 }
 
+/* Add subtle utility for blue shadows/glows if needed */
+@layer utilities {
+  .shadow-blue-lg {
+    box-shadow: 0 10px 32px 0 oklch(54.6% 0.245 262.881 / 20%);
+  }
+  .ring-blue {
+    box-shadow: 0 0 0 2px oklch(55.6% 0.133 255 / 60%);
+  }
+}
+
 @custom-variant data-open {
   &:where([data-state="open"]),
   &:where([data-open]:not([data-open="false"])) {
