@@ -1,3 +1,3 @@
 export default function StoreSettingsClient() {
-  return null; // UI lives in page.tsx for this route as content is static/minimal
+  return null; // Content handled in page.tsx for now, ready for expansion
 }
